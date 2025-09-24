@@ -1,58 +1,108 @@
-# Portfolio Optimization & Risk Modeling (Python)
-End-to-end MVO (Min-Var / Max-Sharpe), Efficient Frontier with Monte Carlo, Risk Parity, Black–Litterman, and optional regime-aware risk targeting. Runs on Yahoo Finance data.
+# Risk Analysis Toolkit
 
-## Quick start
-```bash
-pip install -r requirements.txt
-python portfolio_opt_plus_regime.py --download --rf 0.045 --benchmark VTI   --market_equal --tau 0.2   --regime --regime-window 60 --regime-proxy VTI   --regime-low-pct 0.2 --regime-high-pct 0.8   --regime-low-scale 1.3 --regime-mid-scale 1.0 --regime-high-scale 0.7 --view "BTC-USD:+0.08@0.001,BIL:+0.02@0.001"
+A Python toolkit for **market risk analysis** of portfolios.  
+Includes **VaR (Value at Risk)** and **ES (Expected Shortfall)** under multiple methods, **backtesting** (Kupiec POF test), **drawdowns**, and **stress testing**.
 
-## 🧠 How It Works
+> Built with NumPy, Pandas, SciPy, Matplotlib, and yfinance.  
 
-**Data ➜ Returns ➜ Optimization ➜ Risk Models ➜ Views ➜ Backtest**
+---
 
-1. **Data & Cleaning** — Downloads Adjusted Close prices (Yahoo Finance), aligns to business days, forward-fills small gaps.
-2. **Returns** — Computes log returns (daily or weekly).  
-3. **Optimization** — Builds **Mean–Variance** portfolios under constraints (long-only, fully invested):  
-   - Min-Variance (minimizes \( w^\top \Sigma w \))  
-   - Max-Sharpe (maximizes \( \frac{w^\top \mu - r_f}{\sqrt{w^\top \Sigma w}} \))  
-4. **Efficient Frontier** — Plots the long-only frontier; overlays **Monte Carlo** random portfolios for context.  
-5. **Risk Parity** — Solves for **equal risk contributions** (each asset contributes equally to total variance).  
-6. **Black–Litterman** — Blends equilibrium returns with **investor views** (e.g., `"BTC-USD:+0.08@0.001,BIL:+0.02@0.001"`), where `@` is the view variance (smaller = higher confidence).  
-7. **Backtest** — In-sample fixed-weight backtest vs a benchmark (e.g., VTI) + optional **regime-aware scaling** of risk based on a volatility proxy.
+## Features
 
-## 📐 Key Formulas
+- **Historical VaR & ES** (empirical quantiles of loss distribution)
+- **Parametric Normal VaR & ES** (variance–covariance method)
+- **Monte Carlo VaR & ES** (multivariate normal simulation)
+- **VaR Backtesting** with Kupiec Proportion-of-Failures (POF) test
+- **Drawdown curve** and maximum drawdown statistics
+- **Stress Testing**  
+  - Historical worst windows (1, 5, 10, 20-day cumulative losses)  
+  - Hypothetical scenarios (e.g., −20% equity, −8% bonds, +5% gold)
 
-**Portfolio Variance**
+---
 
-$$
-\sigma_p^2 = w^\top \Sigma w
-$$
-
-**Sharpe Ratio**
-
-$$
-\text{Sharpe}(w) = \frac{w^\top \mu - r_f}{\sqrt{w^\top \Sigma w}}
-$$
-
-**Risk Contribution**
-
-$$
-RC_i = \frac{w_i \cdot (\Sigma w)_i}{w^\top \Sigma w}
-$$
-
-
-### Reproduce the Figures
+## Installation
 
 ```bash
+git clone https://github.com/<YOUR_USERNAME>/risk-analysis.git
+cd risk-analysis
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/portfolio_opt_plus_regime.py --download --rf 0.045 --benchmark VTI \
-  --market_equal --tau 0.2 \
-  --regime --regime-window 60 --regime-proxy VTI \
-  --regime-low-pct 0.2 --regime-high-pct 0.8 \
-  --regime-low-scale 1.3 --regime-mid-scale 1.0 --regime-high-scale 0.7 \
-  --view "BTC-USD:+0.08@0.001,BIL:+0.02@0.001"
 ```
-### Example output
-![Efficient Frontier](figures/efficient_frontier_mc.png)
-![Backtest](figures/backtest_cum_returns_regime.png)
-![Backtest](figures/backtest_cum_returns_regime.png)
+
+Main dependencies:
+```
+numpy
+pandas
+matplotlib
+scipy
+yfinance
+```
+
+---
+
+## Usage
+
+### 1) Historical & Normal VaR/ES
+```bash
+python risk_analysis.py --prices data/prices.csv \
+  --weights data/weights.csv --weights-col MaxSharpe_Weight \
+  --alpha 0.95 --alpha-hi 0.99
+```
+
+### 2) Monte Carlo VaR/ES
+```bash
+python risk_analysis.py --prices data/prices.csv \
+  --weights data/weights.csv --weights-col MaxSharpe_Weight \
+  --alpha 0.99 --mc 100000
+```
+
+### 3) Weekly data
+```bash
+python risk_analysis.py --prices data/prices.csv --weekly
+```
+
+---
+
+## Outputs
+
+- `data/risk_report.csv` – summary of VaR/ES across methods  
+- `data/var_backtest.csv` – rolling VaR estimates + breach indicators  
+- `data/stress_historical.csv` – worst historical windows  
+- `data/stress_hypothetical.csv` – hypothetical stress P&L  
+- Figures saved in `figures/`:
+  - `ret_hist_var.png` – histogram with VaR lines
+  - `rolling_var_exceedances.png` – backtest chart with breaches
+  - `drawdown_curve.png` – portfolio drawdowns
+
+---
+
+## Key Figures
+
+**Return Distribution with VaR lines**  
+![VaR Histogram](figures/ret_hist_var.png)
+
+**Rolling VaR & Exceptions**  
+![VaR Backtest](figures/rolling_var_exceedances.png)
+
+**Drawdown Curve**  
+![Drawdown](figures/drawdown_curve.png)
+
+---
+
+## Interpreting Results
+
+- **VaR (Value at Risk):** cutoff loss at a confidence level.  
+  Example: 1-day 95% VaR = −3% → losses worse than −3% occur 5% of the time.  
+
+- **ES (Expected Shortfall):** average loss **beyond** VaR in the tail.  
+  Better for capital planning and now preferred under Basel III/IV.  
+
+- **Kupiec Test:** checks if the observed breach rate matches the expected α-tail frequency.  
+  - Too many breaches → model underestimates risk.  
+  - Too few breaches → overly conservative.  
+
+- **Drawdown:** peak-to-trough decline, shows investor pain in wealth terms.  
+
+- **Stress Tests:** “what if” scenarios, either replaying past worst periods or applying fixed shocks.
+
