@@ -80,13 +80,13 @@ python risk_analysis.py --prices data/prices.csv --weekly
 ## Key Figures
 
 **Return Distribution with VaR lines**  
-![VaR Histogram](figures/ret_hist_var.png)
+![VaR Histogram](risk_analysis/figures/ret_hist_var.png)
 
 **Rolling VaR & Exceptions**  
-![VaR Backtest](figures/rolling_var_exceedances.png)
+![VaR Backtest](risk_analysis/figures/rolling_var_exceedances.png)
 
 **Drawdown Curve**  
-![Drawdown](figures/drawdown_curve.png)
+![Drawdown](risk_analysis/figures/drawdown_curve.png)
 
 ---
 
